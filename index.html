@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leonardo Decoder OS - MEGA</title>
+    <style>
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+
+        body {
+            margin: 0;
+            background: #0a0a0a;
+            color: #00ff88;
+            font-family: "Courier New", monospace;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 20px;
+        }
+
+        .settings-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .gear-btn {
+            cursor: pointer;
+            font-size: 24px;
+            opacity: 0.5;
+        }
+
+        .gear-btn:hover { opacity: 1; transform: rotate(45deg); }
+
+        .menu {
+            position: absolute;
+            right: 0;
+            background: #141414;
+            border: 1px solid #00ff8855;
+            border-radius: 12px;
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+
+        .menu.active { display: flex; }
+
+        .menu span, .menu button {
+            cursor: pointer;
+            font-size: 12px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: #00ff88;
+            text-align: left;
+        }
+
+        .menu span:hover, .menu button:hover { background: #00ff88; color: #0f0f0f; }
+
+        .card {
+            width: 420px;
+            padding: 30px;
+            background: #141414;
+            border-radius: 22px;
+            border: 1px solid #00ff8833;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.05);
+            margin: 80px auto 20px auto;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .card::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .card::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .card::-webkit-scrollbar-thumb {
+            background: #00ff8844;
+            border-radius: 3px;
+        }
+
+        .card::-webkit-scrollbar-thumb:hover {
+            background: #00ff88;
+        }
+
+        h1 {
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #0a0a0a;
+            border: 1px solid #00ff8844;
+            border-radius: 12px;
+            color: #00ff88;
+            outline: none;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-size: 12px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+            background: transparent;
+        }
+
+        .btn-primary {
+            flex: 2;
+            border: 1px solid #00ff8866;
+            color: #00ff88;
+        }
+
+        .btn-primary:hover { background: #00ff8822; border-color: #00ff88; }
+
+        .btn-secondary {
+            flex: 1;
+            border: 1px solid #ff444466;
+            color: #ff4444;
+        }
+
+        .btn-secondary:hover { background: #ff444422; border-color: #ff4444; }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 10px;
+            border: 1px solid #00ff8844;
+            color: #00ff88;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 2px;
+        }
+
+        .btn-small:hover { background: #00ff8822; }
+
+        .resultado {
+            padding: 15px;
+            min-height: 80px;
+            border-radius: 12px;
+            background: #0a0a0a;
+            border: 1px dashed #00ff8833;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #fff;
+            font-size: 12px;
+            overflow-y: auto;
+            max-height: 200px;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            font-size: 10px;
+            opacity: 0.5;
+            text-align: center;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: #00ff88;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .tabs-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 12px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: transparent;
+            border: 1px solid #00ff8844;
+            color: #00ff88;
+            cursor: pointer;
+            border-radius: 6px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: #00ff8822;
+            border-color: #00ff88;
+        }
+
+        .tab-btn:hover {
+            background: #00ff8822;
+            border-color: #00ff88;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #141414;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #00ff8833;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .modal-close:hover {
+            opacity: 0.7;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #00ff88;
+            color: #0a0a0a;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            animation: slideIn 0.3s ease-out;
+            z-index: 300;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        .info-box {
+            padding: 10px;
+            background: #0a0a0a;
+            border-left: 3px solid #00ff88;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 11px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .stat-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .history-item {
+            background: #0a0a0a;
+            padding: 8px;
+            border-left: 3px solid #00ff88;
+            margin-bottom: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .history-item:hover {
+            background: #1a1a1a;
+            transform: translateX(3px);
+        }
+
+        .strength-bar {
+            width: 100%;
+            height: 8px;
+            background: #0a0a0a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            background: #ff4444;
+            width: 25%;
+            transition: all 0.3s;
+        }
+
+        .strength-fill.medium { background: #ffaa00; width: 50%; }
+        .strength-fill.strong { background: #00ff88; width: 75%; }
+        .strength-fill.very-strong { background: #00ff00; width: 100%; }
+
+        @media (max-width: 768px) {
+            .card {
+                width: 90vw;
+                margin: 10px auto;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="settings-container">
+    <div class="gear-btn" onclick="toggleMenu('langMenu')">⚙</div>
+    <div class="menu" id="langMenu">
+        <button onclick="setLang('pt')">PT_BR</button>
+        <button onclick="setLang('en')">EN_US</button>
+        <button onclick="setLang('es')">ES_ES</button>
+        <hr style="border: none; border-top: 1px solid #00ff8844; margin: 5px 0;">
+        <button onclick="toggleSubmenu('themeMenu')"><span id="temaLabel">🎨 TEMA</span></button>
+        <button onclick="showFeedbackModal()">💬 FEEDBACK</button>
+        <button onclick="showHelp()"><span id="ajudaLabel">❓ AJUDA</span></button>
+    </div>
+
+    <div class="menu" id="themeMenu" style="top: 10px; left: -150px; display: none;">
+        <button onclick="setTheme('dark')">🌙 Dark</button>
+        <button onclick="setTheme('light')">☀️ Light</button>
+    </div>
+</div>
+
+<div class="card">
+    <h1 id="title">LEONARDO_DECODER_OS</h1>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchTab('decoder')">🔓 DECODE</button>
+        <button class="tab-btn" onclick="switchTab('encoder')">🔒 ENCODE</button>
+        <button class="tab-btn" onclick="switchTab('hash')">🔐 HASH</button>
+        <button class="tab-btn" onclick="switchTab('analyze')">🔍 ANÁLISE</button>
+        <button class="tab-btn" onclick="switchTab('tools')">🛠️ TOOLS</button>
+        <button class="tab-btn" onclick="switchTab('history')">⏱️ HISTÓRICO</button>
+        <button class="tab-btn" onclick="switchTab('batch')">📦 BATCH</button>
+        <button class="tab-btn" onclick="switchTab('edu')">📚 EDUCAÇÃO</button>
+    </div>
+
+    <!-- TAB: DECODER -->
+    <div id="decoder" class="tab-content active">
+        <select id="cipherType" onchange="updateCipherInfo()">
+            <option value="auto">🤖 AUTO DETECTAR</option>
+            <optgroup label="CLÁSSICAS">
+                <option value="caesar">Caesar (ROT-N)</option>
+                <option value="rot13">ROT-13</option>
+                <option value="vigenere">Vigenère</option>
+                <option value="atbash">Atbash</option>
+                <option value="reverse">Reverse</option>
+            </optgroup>
+            <optgroup label="MODERNAS">
+                <option value="base64">Base64</option>
+                <option value="base32">Base32</option>
+                <option value="hex">Hexadecimal</option>
+                <option value="octal">Octal</option>
+                <option value="bin">Binary</option>
+                <option value="url">URL Encode</option>
+                <option value="ascii">ASCII Decimal</option>
+            </optgroup>
+            <optgroup label="ESPECIAIS">
+                <option value="morse">Morse Code</option>
+                <option value="nokia">Nokia T9</option>
+                <option value="unicode">Unicode</option>
+            </optgroup>
+            <optgroup label="HASHES">
+                <option value="md5detect">MD5 Hash</option>
+                <option value="sha1detect">SHA1 Hash</option>
+                <option value="sha256detect">SHA256 Hash</option>
+            </optgroup>
+            <optgroup label="FERRAMENTAS">
+                <option value="bruteforce">💥 BRUTE FORCE</option>
+                <option value="multilayer">🔄 MULTI-LAYER</option>
+                <option value="layered">📊 DETECTAR</option>
+            </optgroup>
+        </select>
+
+        <textarea id="inputText" placeholder="Cole o texto criptografado aqui..." spellcheck="false"></textarea>
+
+        <div class="grid-2">
+            <input type="text" id="vigKey" placeholder="Chave Vigenère (opt)" style="display:none;">
+            <input type="number" id="caesarShift" min="0" max="25" value="3" placeholder="Caesar Shift" style="display:none;">
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="decodificar()">▶ DECODIFICAR</button>
+            <button class="btn btn-secondary" onclick="limparDecoder()">⊘ LIMPAR</button>
+        </div>
+
+        <div class="resultado" id="decoderResult">_</div>
+
+        <div class="action-buttons">
+            <button class="btn-small" onclick="copiar('decoderResult')">Copiar</button>
+            <button class="btn-small" onclick="compartilhar('decoderResult')">Compartilhar</button>
+        </div>
+
+        <div class="status-bar" id="status">STATUS: AGUARDANDO</div>
+        
+        <div class="grid-2">
+            <div class="stat">
+                <div class="stat-value" id="resultLength">0</div>
+                <div style="font-size: 9px;">Caracteres</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="confidence">0%</div>
+                <div style="font-size: 9px;">Confiança</div>
+            </div>
+        </div>
+
+        <div class="info-box" id="detectedInfo" style="display: none; margin-top: 15px;">
+            <strong>🎯 DETECTADO:</strong> <span id="detectedType">-</span>
+        </div>
+    </div>
+
+    <!-- TAB: ENCODER -->
+    <div id="encoder" class="tab-content">
+        <select id="encCipherType">
+            <option value="base64">Base64</option>
+            <option value="hex">Hexadecimal</option>
+            <option value="url">URL Encode</option>
+            <option value="ascii">ASCII Decimal</option>
+            <option value="bin">Binary</option>
+            <option value="morse">Morse Code</option>
+            <option value="rot13">ROT-13</option>
+            <option value="reverse">Reverse</option>
+        </select>
+
+        <textarea id="encInput" placeholder="Digite o texto aqui..." spellcheck="false"></textarea>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="codificar()">▶ CODIFICAR</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('encInput').value=''">⊘ LIMPAR</button>
+        </div>
+
+        <div class="resultado" id="encoderResult">_</div>
+        
+        <button class="btn-small" onclick="copiar('encoderResult')">Copiar</button>
+    </div>
+
+    <!-- TAB: HASH GENERATOR -->
+    <div id="hash" class="tab-content">
+        <textarea id="hashInput" placeholder="Digite aqui para gerar hashes..." spellcheck="false"></textarea>
+
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="gerarHashes()">🔐 GERAR HASHES</button>
+
+        <div style="font-size: 11px;">
+            <div class="info-box">
+                MD5: <input type="text" id="hashMD5" readonly style="padding: 5px; margin-top: 5px;">
+                <button class="btn-small" onclick="copiarHash('hashMD5')">Copiar</button>
+            </div>
+            <div class="info-box">
+                SHA1: <input type="text" id="hashSHA1" readonly style="padding: 5px; margin-top: 5px;">
+                <button class="btn-small" onclick="copiarHash('hashSHA1')">Copiar</button>
+            </div>
+            <div class="info-box">
+                SHA256: <input type="text" id="hashSHA256" readonly style="padding: 5px; margin-top: 5px;">
+                <button class="btn-small" onclick="copiarHash('hashSHA256')">Copiar</button>
+            </div>
+            <div class="info-box">
+                SHA512: <input type="text" id="hashSHA512" readonly style="padding: 5px; margin-top: 5px;">
+                <button class="btn-small" onclick="copiarHash('hashSHA512')">Copiar</button>
+            </div>
+        </div>
+
+        <h3 style="font-size: 12px; margin-top: 20px; margin-bottom: 10px;">COMPARADOR</h3>
+        <input type="text" id="compare1" placeholder="Hash 1">
+        <input type="text" id="compare2" placeholder="Hash 2">
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="compararHashes()">🔀 COMPARAR</button>
+        <div class="resultado" id="compareResult">Resultado...</div>
+    </div>
+
+    <!-- TAB: ANÁLISE -->
+    <div id="analyze" class="tab-content">
+        <textarea id="analyzeText" placeholder="Cole o texto para analisar..." spellcheck="false"></textarea>
+
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="analisarTexto()">🔍 ANALISAR</button>
+
+        <div class="grid-2">
+            <div class="stat">
+                <div class="stat-value" id="totalChars">0</div>
+                <div style="font-size: 9px;">Total</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="uniqueChars">0</div>
+                <div style="font-size: 9px;">Únicos</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="entropy">0.0</div>
+                <div style="font-size: 9px;">Entropia</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="ic">0.0</div>
+                <div style="font-size: 9px;">IC</div>
+            </div>
+        </div>
+
+        <div class="resultado" id="analysisResult" style="margin-top: 12px;">Análise...</div>
+    </div>
+
+    <!-- TAB: FERRAMENTAS -->
+    <div id="tools" class="tab-content">
+        <h3 style="font-size: 12px; margin-bottom: 10px;">VISUALIZADOR DE BITS</h3>
+        <input type="text" id="bitsInput" placeholder="Digite um caractere" style="margin-bottom: 12px;">
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="visualizarBits()">📊 VISUALIZAR</button>
+        
+        <div class="grid-2">
+            <div class="info-box">BIN: <input type="text" id="bitsOutput-bin" readonly style="padding: 5px; margin-top: 5px;"></div>
+            <div class="info-box">HEX: <input type="text" id="bitsOutput-hex" readonly style="padding: 5px; margin-top: 5px;"></div>
+            <div class="info-box">OCT: <input type="text" id="bitsOutput-oct" readonly style="padding: 5px; margin-top: 5px;"></div>
+            <div class="info-box">DEC: <input type="text" id="bitsOutput-dec" readonly style="padding: 5px; margin-top: 5px;"></div>
+        </div>
+
+        <h3 style="font-size: 12px; margin: 20px 0 10px 0;">FORÇA DE SENHA</h3>
+        <input type="password" id="passwordInput" placeholder="Digite uma senha" oninput="checkPasswordStrength()">
+        <div id="passwordStrength">
+            <div id="strengthLabel" style="font-size: 11px; margin: 10px 0;">Muito Fraca</div>
+            <div class="strength-bar">
+                <div class="strength-fill" id="strengthBar"></div>
+            </div>
+            <div id="strengthAdvice" style="font-size: 11px; margin-top: 10px;"></div>
+        </div>
+
+        <h3 style="font-size: 12px; margin: 20px 0 10px 0;">DETECTAR HASH</h3>
+        <input type="text" id="hashDetectInput" placeholder="Cole um hash">
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="detectarHash()">🔎 DETECTAR</button>
+        <div class="resultado" id="hashDetectResult">Resultado...</div>
+    </div>
+
+    <!-- TAB: HISTÓRICO -->
+    <div id="history" class="tab-content">
+        <div class="action-buttons">
+            <button class="btn-small" onclick="exportarHistorico()">📥 JSON</button>
+            <button class="btn-small" onclick="exportarCSV()">📊 CSV</button>
+            <button class="btn-small" onclick="limparHistorico()" style="border-color: #ff4444; color: #ff4444;">🗑️ LIMPAR</button>
+        </div>
+
+        <input type="text" id="searchHistory" placeholder="Buscar..." style="margin-bottom: 12px;">
+
+        <div id="historyList" style="max-height: 400px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- TAB: BATCH PROCESSING -->
+    <div id="batch" class="tab-content">
+        <select id="batchType">
+            <option value="md5">MD5 para cada linha</option>
+            <option value="sha256">SHA256 para cada linha</option>
+            <option value="base64">Codificar Base64</option>
+            <option value="hex">Codificar Hex</option>
+        </select>
+
+        <textarea id="batchInput" placeholder="Cole múltiplas linhas..." spellcheck="false" style="min-height: 120px;"></textarea>
+
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="processarBatch()">⚙️ PROCESSAR</button>
+
+        <div class="resultado" id="batchResult" style="min-height: 100px;">Resultado...</div>
+
+        <button class="btn-small" onclick="copiar('batchResult')">Copiar</button>
+    </div>
+
+    <!-- TAB: EDUCAÇÃO -->
+    <div id="edu" class="tab-content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+            <button class="btn-small" onclick="mostrarTutorial('caesar')">Caesar</button>
+            <button class="btn-small" onclick="mostrarTutorial('vigenere')">Vigenère</button>
+            <button class="btn-small" onclick="mostrarTutorial('md5')">MD5</button>
+            <button class="btn-small" onclick="mostrarTutorial('sha')">SHA</button>
+            <button class="btn-small" onclick="mostrarTutorial('base64')">Base64</button>
+            <button class="btn-small" onclick="mostrarTutorial('morse')">Morse</button>
+        </div>
+
+        <div class="resultado" id="tutorialContent">Clique em um botão...</div>
+
+        <h3 style="font-size: 12px; margin-top: 20px; margin-bottom: 10px;">DESAFIO</h3>
+        <div class="resultado" id="challengeText" style="min-height: 60px;">Carregando...</div>
+        <input type="text" id="challengeAnswer" placeholder="Sua resposta...">
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="verificarResposta()">✓ VERIFICAR</button>
+            <button class="btn btn-secondary" onclick="proximoDesafio()">➡️ PRÓXIMO</button>
+        </div>
+        <div class="resultado" id="challengeResult">Resultado...</div>
+    </div>
+</div>
+
+<!-- MODAL FEEDBACK -->
+<div id="feedbackModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="toggleModal('feedbackModal')">×</div>
+        <h2 style="font-size: 14px; margin-bottom: 15px;">💬 FEEDBACK</h2>
+        <p style="font-size: 11px; opacity: 0.7; margin-bottom: 15px;">Encontrou um erro? Tem uma sugestão? Deixe seu feedback!</p>
+
+        <select id="feedbackType" style="margin-bottom: 12px;">
+            <option value="bug">🐛 Reportar Bug</option>
+            <option value="sugestao">💡 Sugestão</option>
+            <option value="elogio">⭐ Elogio</option>
+            <option value="outro">📌 Outro</option>
+        </select>
+
+        <textarea id="feedbackText" placeholder="Descreva detalhadamente..." spellcheck="false" style="min-height: 100px; margin-bottom: 12px;"></textarea>
+
+        <input type="text" id="feedbackEmail" placeholder="Seu email (opcional)" style="margin-bottom: 12px;">
+
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="enviarFeedback()">📤 ENVIAR</button>
+
+        <h3 style="font-size: 12px; margin: 20px 0 10px 0;">📋 FEEDBACKS</h3>
+        <input type="text" id="searchFeedback" placeholder="Buscar..." style="margin-bottom: 12px;" oninput="filtrarFeedbacks()">
+        
+        <div id="feedbackList" style="max-height: 300px; overflow-y: auto;"></div>
+
+        <div style="margin-top: 15px; border-top: 1px solid #00ff8844; padding-top: 15px;">
+            <button class="btn-small" onclick="exportarFeedbacks()">📥 EXPORTAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL AJUDA -->
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="toggleModal('helpModal')">×</div>
+        <h2 style="font-size: 14px; margin-bottom: 15px;" id="helpTitle">⌨️ ATALHOS</h2>
+        <p style="font-size: 11px; margin: 8px 0;"><strong>Ctrl+D:</strong> <span id="help-ctrl-d">Decodificar</span></p>
+        <p style="font-size: 11px; margin: 8px 0;"><strong>Ctrl+E:</strong> <span id="help-ctrl-e">Codificar</span></p>
+        <p style="font-size: 11px; margin: 8px 0;"><strong>Ctrl+H:</strong> <span id="help-ctrl-h">Histórico</span></p>
+        <p style="font-size: 11px; margin: 8px 0;"><strong>Ctrl+L:</strong> <span id="help-ctrl-l">Limpar</span></p>
+        <hr style="border: none; border-top: 1px solid #00ff8844; margin: 10px 0;">
+        <h3 style="font-size: 12px; margin: 10px 0;" id="helpFeatures">📚 25+ FEATURES</h3>
+        <p style="font-size: 10px; line-height: 1.6;">
+        ✓ <span id="help-cifras">20+ Cifras</span><br>
+        ✓ <span id="help-hash">Hash Generator (MD5/SHA1/SHA256/SHA512)</span><br>
+        ✓ <span id="help-freq">Análise de Frequência</span><br>
+        ✓ <span id="help-caesar">Caesar Brute Force</span><br>
+        ✓ <span id="help-multilayer">Multi-Layer Decode</span><br>
+        ✓ <span id="help-batch">Batch Processing</span><br>
+        ✓ <span id="help-history">Histórico + Export</span><br>
+        ✓ <span id="help-pass">Força de Senha</span><br>
+        ✓ <span id="help-edu">Modo Educacional</span><br>
+        ✓ <span id="help-lang">3 Idiomas</span><br>
+        ✓ <span id="help-theme">Tema Dark/Light</span>
+        </p>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.0/crypto-js.min.js"></script>
+
+<script>
+    // ===== TRADUÇÕES =====
+    const translations = {
+        pt: { 
+            title: "LEONARDO_DECODER_OS", 
+            status: "STATUS: AGUARDANDO", 
+            copied: "✓ Copiado!", 
+            tema: "TEMA", 
+            ajuda: "AJUDA",
+            atalhos: "ATALHOS",
+            features: "25+ FEATURES",
+            ctrl_d: "Decodificar",
+            ctrl_e: "Codificar",
+            ctrl_h: "Histórico",
+            ctrl_l: "Limpar",
+            cifras: "20+ Cifras",
+            hash_gen: "Hash Generator (MD5/SHA1/SHA256/SHA512)",
+            freq_ana: "Análise de Frequência",
+            caesar_bf: "Caesar Brute Force",
+            multilayer: "Multi-Layer Decode",
+            batch: "Batch Processing",
+            history_exp: "Histórico + Export",
+            pass_strength: "Força de Senha",
+            edu_mode: "Modo Educacional",
+            idiomas: "3 Idiomas",
+            tema_dark: "Tema Dark/Light"
+        },
+        en: { 
+            title: "DECODER_TERMINAL_V4", 
+            status: "STATUS: IDLE", 
+            copied: "✓ Copied!", 
+            tema: "THEME", 
+            ajuda: "HELP",
+            atalhos: "KEYBOARD SHORTCUTS",
+            features: "25+ FEATURES",
+            ctrl_d: "Decode",
+            ctrl_e: "Encode",
+            ctrl_h: "History",
+            ctrl_l: "Clear",
+            cifras: "20+ Ciphers",
+            hash_gen: "Hash Generator (MD5/SHA1/SHA256/SHA512)",
+            freq_ana: "Frequency Analysis",
+            caesar_bf: "Caesar Brute Force",
+            multilayer: "Multi-Layer Decode",
+            batch: "Batch Processing",
+            history_exp: "History + Export",
+            pass_strength: "Password Strength",
+            edu_mode: "Educational Mode",
+            idiomas: "3 Languages",
+            tema_dark: "Dark/Light Theme"
+        },
+        es: { 
+            title: "LEONARDO_DECODIFICADOR", 
+            status: "ESTADO: ESPERANDO", 
+            copied: "✓ ¡Copiado!", 
+            tema: "TEMA", 
+            ajuda: "AYUDA",
+            atalhos: "ATAJOS DE TECLADO",
+            features: "25+ CARACTERÍSTICAS",
+            ctrl_d: "Decodificar",
+            ctrl_e: "Codificar",
+            ctrl_h: "Historial",
+            ctrl_l: "Limpiar",
+            cifras: "20+ Cifras",
+            hash_gen: "Generador de Hash (MD5/SHA1/SHA256/SHA512)",
+            freq_ana: "Análisis de Frecuencia",
+            caesar_bf: "Caesar Fuerza Bruta",
+            multilayer: "Decodificación Multi-Capa",
+            batch: "Procesamiento por Lotes",
+            history_exp: "Historial + Exportar",
+            pass_strength: "Fuerza de Contraseña",
+            edu_mode: "Modo Educativo",
+            idiomas: "3 Idiomas",
+            tema_dark: "Tema Oscuro/Claro"
+        }
+    };
+
+    let currentLang = 'pt';
+    let history = JSON.parse(localStorage.getItem('decoderHistory') || '[]');
+    let feedbacks = JSON.parse(localStorage.getItem('decoderFeedbacks') || '[]');
+    let currentChallenge = 0;
+
+    const challenges = [
+        { cipher: "base64", text: "SGVsbG8gV29ybGQ=", answer: "Hello World" },
+        { cipher: "rot13", text: "URYYB", answer: "HELLO" },
+        { cipher: "caesar", text: "KHOOR", answer: "HELLO" },
+        { cipher: "hex", text: "48 65 6C 6C 6F", answer: "Hello" },
+        { cipher: "morse", text: ".... . .-.. .-.. ---", answer: "HELLO" }
+    ];
+
+    // ===== HASH FUNCTIONS =====
+    const md5 = str => CryptoJS.MD5(str).toString();
+    const sha1 = str => CryptoJS.SHA1(str).toString();
+    const sha256 = str => CryptoJS.SHA256(str).toString();
+    const sha512 = str => CryptoJS.SHA512(str).toString();
+
+    // ===== CIPHER FUNCTIONS =====
+    function base64Encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+    function base64Decode(str) { try { return decodeURIComponent(escape(atob(str))); } catch(e) { return 'ERRO: Base64'; } }
+    function caesarDecode(text, shift = 3) { return text.split('').map(c => /[a-zA-Z]/.test(c) ? String.fromCharCode((c.charCodeAt(0) - (c.charCodeAt(0) >= 97 ? 97 : 65) - shift + 26) % 26 + (c.charCodeAt(0) >= 97 ? 97 : 65)) : c).join(''); }
+    function hexEncode(str) { return str.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' '); }
+    function hexDecode(str) { try { return str.split(/\s+/).map(h => String.fromCharCode(parseInt(h, 16))).join(''); } catch(e) { return 'ERRO: Hex'; } }
+    function urlEncode(str) { return encodeURIComponent(str); }
+    function urlDecode(str) { try { return decodeURIComponent(str); } catch(e) { return 'ERRO: URL'; } }
+    function asciiEncode(str) { return str.split('').map(c => c.charCodeAt(0)).join(' '); }
+    function asciiDecode(str) { try { return str.split(/\s+/).map(a => String.fromCharCode(parseInt(a))).join(''); } catch(e) { return 'ERRO: ASCII'; } }
+    function binEncode(str) { return str.split('').map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' '); }
+    function binDecode(str) { try { return str.split(/\s+/).map(b => String.fromCharCode(parseInt(b, 2))).join(''); } catch(e) { return 'ERRO: Binary'; } }
+    function octalEncode(str) { return str.split('').map(c => c.charCodeAt(0).toString(8)).join(' '); }
+    function octalDecode(str) { try { return str.split(/\s+/).map(o => String.fromCharCode(parseInt(o, 8))).join(''); } catch(e) { return 'ERRO: Octal'; } }
+    function atbashDecode(text) { return text.split('').map(c => /[a-zA-Z]/.test(c) ? String.fromCharCode((c.charCodeAt(0) >= 97 ? 97 : 65) + 25 - (c.charCodeAt(0) - (c.charCodeAt(0) >= 97 ? 97 : 65))) : c).join(''); }
+    function reverseDecode(text) { return text.split('').reverse().join(''); }
+    function rot13(text) { return caesarDecode(text, 13); }
+
+    const t9Map = {'2':'ABC','3':'DEF','4':'GHI','5':'JKL','6':'MNO','7':'PQRS','8':'TUV','9':'WXYZ','0':' '};
+    const morseMap = {"A":".-","B":"-...","C":"-.-.","D":"-..","E":".","F":"..-.","G":"--.","H":"....","I":"..","J":".---","K":"-.-","L":".-..","M":"--","N":"-.","O":"---","P":".--.","Q":"--.-","R":".-.","S":"...","T":"-","U":"..-","V":"...-","W":".--","X":"-..-","Y":"-.--","Z":"--.."," ":"/"};
+    const morseRev = Object.fromEntries(Object.entries(morseMap).map(([k,v]) => [v,k]));
+
+    function morseDecode(text) { return text.split(' ').map(m => morseRev[m] || '').join(''); }
+    function morseEncode(text) { return text.toUpperCase().split('').map(c => morseMap[c] || '').join(' '); }
+    function t9Decode(text) { return text.split(' ').map(g => t9Map[g[0]] ? t9Map[g[0]][(g.length-1) % t9Map[g[0]].length] : '').join(''); }
+
+    function vigenereDecode(text, key) {
+        if (!key) return "ERRO: Chave necessária";
+        key = key.toUpperCase();
+        let keyIndex = 0;
+        return text.split('').map(c => {
+            if (!/[a-zA-Z]/.test(c)) return c;
+            const base = c.charCodeAt(0) >= 97 ? 97 : 65;
+            const shift = key[keyIndex % key.length].charCodeAt(0) - 65;
+            keyIndex++;
+            return String.fromCharCode((c.charCodeAt(0) - base - shift + 26) % 26 + base);
+        }).join('');
+    }
+
+    function vigenereEncode(text, key) {
+        if (!key) return "ERRO: Chave necessária";
+        key = key.toUpperCase();
+        let keyIndex = 0;
+        return text.split('').map(c => {
+            if (!/[a-zA-Z]/.test(c)) return c;
+            const base = c.charCodeAt(0) >= 97 ? 97 : 65;
+            const shift = key[keyIndex % key.length].charCodeAt(0) - 65;
+            keyIndex++;
+            return String.fromCharCode((c.charCodeAt(0) - base + shift) % 26 + base);
+        }).join('');
+    }
+
+    function scoreEnglish(text) {
+        const words = ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on'];
+        const matches = text.toLowerCase().match(/\w+/g) || [];
+        return matches.filter(w => words.includes(w)).length * 2;
+    }
+
+    // ===== UI FUNCTIONS =====
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        document.getElementById(tab).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function toggleMenu(id) {
+        const menu = document.getElementById(id);
+        const allMenus = document.querySelectorAll('.menu');
+        allMenus.forEach(m => {
+            if (m.id !== id) m.classList.remove('active');
+        });
+        menu.classList.toggle('active');
+    }
+
+    function toggleSubmenu(id) {
+        const submenu = document.getElementById(id);
+        submenu.style.display = submenu.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function setLang(lang) {
+        currentLang = lang;
+        document.getElementById('title').textContent = translations[lang].title;
+        document.getElementById('status').textContent = translations[lang].status;
+        document.getElementById('temaLabel').textContent = `🎨 ${translations[lang].tema}`;
+        document.getElementById('ajudaLabel').textContent = `❓ ${translations[lang].ajuda}`;
+        document.querySelectorAll('.menu').forEach(m => m.classList.remove('active'));
+        localStorage.setItem('lang', lang);
+    }
+
+    function setTheme(theme) {
+        if (theme === 'light') {
+            document.body.style.background = '#f5f5f5';
+            document.body.style.color = '#000';
+            document.querySelectorAll('.card, .menu, .modal-content').forEach(el => {
+                el.style.background = '#ffffff';
+                el.style.borderColor = '#00000033';
+            });
+        } else {
+            document.body.style.background = '#0a0a0a';
+            document.body.style.color = '#00ff88';
+            document.querySelectorAll('.card, .menu, .modal-content').forEach(el => {
+                el.style.background = '#141414';
+                el.style.borderColor = '#00ff8833';
+            });
+        }
+        document.getElementById('themeMenu').style.display = 'none';
+        localStorage.setItem('theme', theme);
+    }
+
+    function notify(msg) {
+        const notif = document.createElement('div');
+        notif.className = 'notification';
+        notif.textContent = msg;
+        document.body.appendChild(notif);
+        setTimeout(() => notif.remove(), 2500);
+    }
+
+    function copiar(id) {
+        const texto = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(texto).then(() => notify(translations[currentLang].copied));
+    }
+
+    function copiarHash(id) {
+        const texto = document.getElementById(id).value;
+        navigator.clipboard.writeText(texto).then(() => notify(translations[currentLang].copied));
+    }
+
+    function compartilhar(id) {
+        const texto = document.getElementById(id).textContent;
+        if (navigator.share) {
+            navigator.share({ text: texto });
+        } else {
+            copiar(id);
+        }
+    }
+
+    function toggleModal(id) {
+        document.getElementById(id).classList.toggle('active');
+    }
+
+    function updateHelpTranslations() {
+        const t = translations[currentLang];
+        document.getElementById('helpTitle').textContent = `⌨️ ${t.atalhos}`;
+        document.getElementById('help-ctrl-d').textContent = t.ctrl_d;
+        document.getElementById('help-ctrl-e').textContent = t.ctrl_e;
+        document.getElementById('help-ctrl-h').textContent = t.ctrl_h;
+        document.getElementById('help-ctrl-l').textContent = t.ctrl_l;
+        document.getElementById('helpFeatures').textContent = `📚 ${t.features}`;
+        document.getElementById('help-cifras').textContent = t.cifras;
+        document.getElementById('help-hash').textContent = t.hash_gen;
+        document.getElementById('help-freq').textContent = t.freq_ana;
+        document.getElementById('help-caesar').textContent = t.caesar_bf;
+        document.getElementById('help-multilayer').textContent = t.multilayer;
+        document.getElementById('help-batch').textContent = t.batch;
+        document.getElementById('help-history').textContent = t.history_exp;
+        document.getElementById('help-pass').textContent = t.pass_strength;
+        document.getElementById('help-edu').textContent = t.edu_mode;
+        document.getElementById('help-lang').textContent = t.idiomas;
+        document.getElementById('help-theme').textContent = t.tema_dark;
+    }
+
+    function showHelp() {
+        updateHelpTranslations();
+        toggleModal('helpModal');
+        document.getElementById('langMenu').classList.remove('active');
+    }
+
+    function showFeedbackModal() {
+        toggleModal('feedbackModal');
+        document.getElementById('langMenu').classList.remove('active');
+        exibirFeedbacks();
+    }
+
+    function updateCipherInfo() {
+        const type = document.getElementById('cipherType').value;
+        document.getElementById('vigKey').style.display = type === 'vigenere' ? 'block' : 'none';
+        document.getElementById('caesarShift').style.display = type === 'caesar' ? 'block' : 'none';
+    }
+
+    // ===== MAIN FUNCTIONS =====
+    function decodificar() {
+        const input = document.getElementById('inputText').value.trim();
+        let type = document.getElementById('cipherType').value;
+        const vigKey = document.getElementById('vigKey').value;
+        const shift = parseInt(document.getElementById('caesarShift').value) || 3;
+
+        if (!input) { notify('⚠️ Digite algo!'); return; }
+
+        // AUTO DETECTAR
+        let detectedType = type;
+        if (type === 'auto') {
+            if (/^[.\-\s\/]+$/.test(input)) type = 'morse';
+            else if (/^[01\s]+$/.test(input)) type = 'bin';
+            else if (/^[0-9A-Fa-f\s]+$/.test(input)) type = 'hex';
+            else if (input.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(input)) type = 'base64';
+            else if (/^[2-9\s]+$/.test(input)) type = 'nokia';
+            else if (/^[a-f0-9]{32}$/i.test(input.trim())) type = 'md5detect';
+            else if (/^[a-f0-9]{40}$/i.test(input.trim())) type = 'sha1detect';
+            else if (/^[a-f0-9]{64}$/i.test(input.trim())) type = 'sha256detect';
+            else type = 'caesar';
+            
+            detectedType = type;
+            document.getElementById('detectedInfo').style.display = 'block';
+            document.getElementById('detectedType').textContent = type.toUpperCase();
+        } else {
+            document.getElementById('detectedInfo').style.display = 'none';
+        }
+
+        let result = '', confidence = 0;
+
+        try {
+            switch(type) {
+                case 'base64': result = base64Decode(input); confidence = 90; break;
+                case 'hex': result = hexDecode(input); confidence = 85; break;
+                case 'caesar': result = caesarDecode(input, shift); confidence = 70; break;
+                case 'rot13': result = rot13(input); confidence = 95; break;
+                case 'morse': result = morseDecode(input); confidence = 90; break;
+                case 'nokia': result = t9Decode(input); confidence = 80; break;
+                case 'url': result = urlDecode(input); confidence = 85; break;
+                case 'ascii': result = asciiDecode(input); confidence = 85; break;
+                case 'bin': result = binDecode(input); confidence = 90; break;
+                case 'octal': result = octalDecode(input); confidence = 80; break;
+                case 'atbash': result = atbashDecode(input); confidence = 85; break;
+                case 'reverse': result = reverseDecode(input); confidence = 95; break;
+                case 'vigenere': result = vigenereDecode(input, vigKey); confidence = vigKey ? 85 : 40; break;
+                case 'md5detect': result = /^[a-f0-9]{32}$/i.test(input) ? "✓ MD5: " + input : "✗ Não é MD5"; break;
+                case 'sha1detect': result = /^[a-f0-9]{40}$/i.test(input) ? "✓ SHA1: " + input : "✗ Não é SHA1"; break;
+                case 'sha256detect': result = /^[a-f0-9]{64}$/i.test(input) ? "✓ SHA256: " + input : "✗ Não é SHA256"; break;
+                case 'unicode': result = input.replace(/\\u([0-9a-f]{4})/gi, (_, code) => String.fromCharCode(parseInt(code, 16))); break;
+                case 'base32':
+                    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+                    const bits = input.toUpperCase().split('').map(c => {let i = alphabet.indexOf(c); return (i === -1 ? 0 : i).toString(2).padStart(5, '0');}).join('');
+                    result = String.fromCharCode(...bits.match(/.{1,8}/g).map(b => parseInt(b, 2)));
+                    confidence = 85;
+                    break;
+                case 'bruteforce':
+                    let html = '<strong>Top 5 Shifts:</strong><br>';
+                    for (let i = 0; i < 5; i++) {
+                        const decoded = caesarDecode(input, i);
+                        html += `[${i}] ${decoded.substring(0, 40)}<br>`;
+                    }
+                    document.getElementById('decoderResult').innerHTML = html;
+                    addToHistory(input, html, 'BRUTE_FORCE');
+                    document.getElementById('resultLength').textContent = input.length;
+                    document.getElementById('confidence').textContent = '60%';
+                    document.getElementById('detectedInfo').style.display = 'none';
+                    return;
+                case 'multilayer':
+                    let temp = input;
+                    let layers = '';
+                    for (let i = 0; i < 5; i++) {
+                        const decoded = base64Decode(temp);
+                        if (decoded === temp || decoded.includes('ERRO')) break;
+                        layers += `L${i+1}: ${decoded.substring(0, 50)}<br>`;
+                        temp = decoded;
+                    }
+                    result = temp;
+                    document.getElementById('decoderResult').innerHTML = '<strong>Multi-Layer:</strong><br>' + layers + '<br>FINAL: ' + result;
+                    addToHistory(input, result, 'MULTILAYER');
+                    document.getElementById('resultLength').textContent = result.length;
+                    document.getElementById('confidence').textContent = '75%';
+                    document.getElementById('detectedInfo').style.display = 'none';
+                    return;
+                case 'layered':
+                    let detections = [];
+                    if (/^[.\-\s\/]+$/.test(input)) detections.push('MORSE');
+                    if (/^[01\s]+$/.test(input)) detections.push('BINARY');
+                    if (/^[0-9A-Fa-f\s]+$/.test(input)) detections.push('HEX');
+                    if (input.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(input)) detections.push('BASE64');
+                    document.getElementById('decoderResult').innerHTML = '<strong>Possíveis Cifras:</strong><br>' + (detections.length ? detections.join('<br>') : 'Nenhuma detectada');
+                    document.getElementById('detectedInfo').style.display = 'none';
+                    return;
+            }
+        } catch (e) {
+            result = 'ERRO: ' + e.message;
+        }
+
+        document.getElementById('decoderResult').textContent = result;
+        document.getElementById('resultLength').textContent = result.length;
+        document.getElementById('confidence').textContent = confidence + '%';
+        addToHistory(input, result, type);
+    }
+
+    function codificar() {
+        const input = document.getElementById('encInput').value;
+        const type = document.getElementById('encCipherType').value;
+        let result = '';
+
+        try {
+            switch(type) {
+                case 'base64': result = base64Encode(input); break;
+                case 'hex': result = hexEncode(input); break;
+                case 'url': result = urlEncode(input); break;
+                case 'ascii': result = asciiEncode(input); break;
+                case 'bin': result = binEncode(input); break;
+                case 'morse': result = morseEncode(input); break;
+                case 'rot13': result = rot13(input); break;
+                case 'reverse': result = reverseDecode(input); break;
+            }
+        } catch (e) {
+            result = 'ERRO: ' + e.message;
+        }
+
+        document.getElementById('encoderResult').textContent = result;
+        addToHistory(input, result, 'ENCODE');
+    }
+
+    function gerarHashes() {
+        const input = document.getElementById('hashInput').value;
+        if (!input) { notify('⚠️ Digite algo!'); return; }
+
+        document.getElementById('hashMD5').value = md5(input);
+        document.getElementById('hashSHA1').value = sha1(input);
+        document.getElementById('hashSHA256').value = sha256(input);
+        document.getElementById('hashSHA512').value = sha512(input);
+        notify('✓ Hashes gerados!');
+    }
+
+    function compararHashes() {
+        const h1 = document.getElementById('compare1').value.trim();
+        const h2 = document.getElementById('compare2').value.trim();
+
+        if (!h1 || !h2) { notify('⚠️ Cole dois hashes!'); return; }
+
+        const resultado = h1 === h2 ? '✅ IGUAIS!' : '❌ DIFERENTES!';
+        document.getElementById('compareResult').textContent = resultado;
+    }
+
+    function analisarTexto() {
+        const texto = document.getElementById('analyzeText').value;
+        if (!texto) { notify('⚠️ Cole um texto!'); return; }
+
+        const chars = texto.length;
+        const unique = new Set(texto).size;
+
+        let freq = {};
+        for (let c of texto) freq[c] = (freq[c] || 0) + 1;
+
+        let entropy = 0;
+        for (let f of Object.values(freq)) {
+            const p = f / texto.length;
+            entropy -= p * Math.log2(p);
+        }
+
+        let ic = 0;
+        for (let f of Object.values(freq)) {
+            ic += (f * (f - 1)) / (texto.length * (texto.length - 1));
+        }
+
+        document.getElementById('totalChars').textContent = chars;
+        document.getElementById('uniqueChars').textContent = unique;
+        document.getElementById('entropy').textContent = entropy.toFixed(2);
+        document.getElementById('ic').textContent = ic.toFixed(2);
+
+        const score = scoreEnglish(texto);
+        const lang = score > 5 ? '🇬🇧 INGLÊS' : score > 2 ? '⚠️ Provável' : '❓ Incerto';
+        document.getElementById('analysisResult').textContent = `Idioma: ${lang}\nScore: ${score}`;
+    }
+
+    function visualizarBits() {
+        const input = document.getElementById('bitsInput').value;
+        if (!input) { notify('⚠️ Digite!'); return; }
+
+        const code = input.charCodeAt(0);
+        document.getElementById('bitsOutput-bin').value = code.toString(2).padStart(8, '0');
+        document.getElementById('bitsOutput-hex').value = code.toString(16).toUpperCase();
+        document.getElementById('bitsOutput-oct').value = code.toString(8);
+        document.getElementById('bitsOutput-dec').value = code;
+    }
+
+    function checkPasswordStrength() {
+        const pwd = document.getElementById('passwordInput').value;
+        let strength = 0;
+
+        if (pwd.length >= 8) strength += 1;
+        if (pwd.length >= 12) strength += 2;
+        if (/[a-z]/.test(pwd)) strength += 1;
+        if (/[A-Z]/.test(pwd)) strength += 1;
+        if (/[0-9]/.test(pwd)) strength += 1;
+        if (/[^a-zA-Z0-9]/.test(pwd)) strength += 2;
+
+        const labels = ['Muito Fraca', 'Fraca', 'Média', 'Forte', 'Muito Forte', 'Excelente'];
+        const strengths = ['', 'medium', 'medium', 'strong', 'strong', 'very-strong'];
+
+        document.getElementById('strengthLabel').textContent = labels[Math.min(strength, 5)];
+        document.getElementById('strengthBar').className = `strength-fill ${strengths[Math.min(strength, 5)]}`;
+    }
+
+    function detectarHash() {
+        const input = document.getElementById('hashDetectInput').value.trim();
+        if (!input) { notify('⚠️ Cole um hash!'); return; }
+
+        let type = 'DESCONHECIDO';
+        if (/^[a-f0-9]{32}$/i.test(input)) type = 'MD5';
+        else if (/^[a-f0-9]{40}$/i.test(input)) type = 'SHA1';
+        else if (/^[a-f0-9]{64}$/i.test(input)) type = 'SHA256';
+        else if (/^[a-f0-9]{128}$/i.test(input)) type = 'SHA512';
+
+        document.getElementById('hashDetectResult').textContent = `Tipo: ${type}`;
+    }
+
+    function processarBatch() {
+        const input = document.getElementById('batchInput').value;
+        const type = document.getElementById('batchType').value;
+
+        if (!input) { notify('⚠️ Cole itens!'); return; }
+
+        const lines = input.split('\n').filter(l => l.trim());
+        let results = [];
+
+        lines.forEach(line => {
+            let result = '';
+            switch(type) {
+                case 'md5': result = md5(line); break;
+                case 'sha256': result = sha256(line); break;
+                case 'base64': result = base64Encode(line); break;
+                case 'hex': result = hexEncode(line); break;
+            }
+            results.push(`${line} → ${result}`);
+        });
+
+        document.getElementById('batchResult').textContent = results.join('\n');
+        notify(`✓ ${results.length} itens processados!`);
+    }
+
+    function limparDecoder() {
+        document.getElementById('inputText').value = '';
+        document.getElementById('decoderResult').textContent = '_';
+        document.getElementById('resultLength').textContent = '0';
+        document.getElementById('confidence').textContent = '0%';
+    }
+
+    // ===== HISTÓRICO =====
+    function addToHistory(input, output, type) {
+        history.unshift({ input: input.substring(0, 50), output: output.substring(0, 50), type, time: new Date().toLocaleTimeString() });
+        history = history.slice(0, 50);
+        localStorage.setItem('decoderHistory', JSON.stringify(history));
+        updateHistoryDisplay();
+    }
+
+    function updateHistoryDisplay() {
+        const list = document.getElementById('historyList');
+        list.innerHTML = history.map((item, i) => `<div class="history-item" onclick="restaurarHistorico(${i})"><strong>${item.type}</strong><br>${item.input} → ${item.output}<br><span style="font-size:9px;opacity:0.5;">${item.time}</span></div>`).join('');
+    }
+
+    function restaurarHistorico(index) {
+        document.getElementById('inputText').value = history[index].input;
+        switchTab('decoder');
+    }
+
+    function exportarHistorico() {
+        const json = JSON.stringify(history, null, 2);
+        const blob = new Blob([json], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'decoder-history.json';
+        a.click();
+        notify('✓ Exportado JSON!');
+    }
+
+    function exportarCSV() {
+        let csv = 'Tipo,Input,Output,Horário\n';
+        history.forEach(item => csv += `"${item.type}","${item.input}","${item.output}","${item.time}"\n`);
+        const blob = new Blob([csv], {type: 'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'decoder-history.csv';
+        a.click();
+        notify('✓ Exportado CSV!');
+    }
+
+    function limparHistorico() {
+        if (confirm('Tem certeza? Não pode desfeito!')) {
+            history = [];
+            localStorage.removeItem('decoderHistory');
+            updateHistoryDisplay();
+            notify('✓ Histórico limpo!');
+        }
+    }
+
+    // ===== EDUCAÇÃO =====
+    const tutorials = {
+        caesar: "Caesar Cipher desloca cada letra. A→D (shift 3). Muito fraca, apenas 26 possibilidades.",
+        vigenere: "Vigenère usa uma chave. Cada letra deslocada diferente. Muito mais segura que Caesar.",
+        md5: "MD5 gera hash 128-bit (32 chars hex). Irreversível mas quebrado desde 2004.",
+        sha: "SHA256 (256-bit) seguro. SHA512 (512-bit) muito seguro. Usados em blockchain.",
+        base64: "Codificação que converte binário em ASCII. Uso: emails, URLs, transmissão.",
+        morse: "Pontos (.) e traços (-). A=.- S=... Comunicação via rádio/sinais."
+    };
+
+    function mostrarTutorial(topic) {
+        document.getElementById('tutorialContent').textContent = tutorials[topic] || 'Tutorial em desenvolvimento';
+    }
+
+    function proximoDesafio() {
+        currentChallenge = (currentChallenge + 1) % challenges.length;
+        const ch = challenges[currentChallenge];
+        document.getElementById('challengeText').textContent = `${ch.cipher.toUpperCase()}: ${ch.text}`;
+        document.getElementById('challengeAnswer').value = '';
+        document.getElementById('challengeResult').textContent = '';
+    }
+
+    function verificarResposta() {
+        const answer = document.getElementById('challengeAnswer').value.trim().toUpperCase();
+        const expected = challenges[currentChallenge].answer.toUpperCase();
+        document.getElementById('challengeResult').textContent = answer === expected ? '✅ CORRETO!' : `❌ Errado. Era: ${expected}`;
+    }
+
+    // ===== FEEDBACK =====
+    function enviarFeedback() {
+        const type = document.getElementById('feedbackType').value;
+        const text = document.getElementById('feedbackText').value.trim();
+        const email = document.getElementById('feedbackEmail').value.trim();
+
+        if (!text) {
+            notify('⚠️ Digite algo para enviar!');
+            return;
+        }
+
+        const feedback = {
+            type: type,
+            text: text,
+            email: email || 'Anônimo',
+            time: new Date().toLocaleString(),
+            id: Date.now()
+        };
+
+        feedbacks.unshift(feedback);
+        localStorage.setItem('decoderFeedbacks', JSON.stringify(feedbacks));
+
+        notify('✅ Feedback enviado! Obrigado por ajudar!');
+        limparFeedback();
+        exibirFeedbacks();
+    }
+
+    function limparFeedback() {
+        document.getElementById('feedbackText').value = '';
+        document.getElementById('feedbackEmail').value = '';
+        document.getElementById('feedbackType').value = 'bug';
+    }
+
+    function exibirFeedbacks() {
+        const list = document.getElementById('feedbackList');
+        
+        if (feedbacks.length === 0) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.5;">Nenhum feedback ainda</div>';
+            return;
+        }
+
+        list.innerHTML = feedbacks.map((fb, i) => `
+            <div class="history-item" style="margin-bottom: 10px;">
+                <strong>${fb.type.toUpperCase()} - ${fb.email}</strong>
+                <div style="font-size: 11px; margin-top: 5px;">${fb.text}</div>
+                <div class="history-time">${fb.time}</div>
+            </div>
+        `).join('');
+    }
+
+    function filtrarFeedbacks() {
+        const search = document.getElementById('searchFeedback').value.toLowerCase();
+        const list = document.getElementById('feedbackList');
+
+        if (!search) {
+            exibirFeedbacks();
+            return;
+        }
+
+        const filtered = feedbacks.filter(fb => 
+            fb.text.toLowerCase().includes(search) || 
+            fb.email.toLowerCase().includes(search) ||
+            fb.type.toLowerCase().includes(search)
+        );
+
+        list.innerHTML = filtered.map((fb, i) => `
+            <div class="history-item" style="margin-bottom: 10px;">
+                <strong>${fb.type.toUpperCase()} - ${fb.email}</strong>
+                <div style="font-size: 11px; margin-top: 5px;">${fb.text}</div>
+                <div class="history-time">${fb.time}</div>
+            </div>
+        `).join('') || '<div style="text-align: center; padding: 20px; opacity: 0.5;">Nenhum feedback encontrado</div>';
+    }
+
+    function exportarFeedbacks() {
+        if (feedbacks.length === 0) {
+            notify('⚠️ Nenhum feedback para exportar!');
+            return;
+        }
+
+        const json = JSON.stringify(feedbacks, null, 2);
+        const blob = new Blob([json], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'decoder-feedbacks.json';
+        a.click();
+        notify('✓ Feedbacks exportados!');
+    }
+
+    // ===== KEYBOARD SHORTCUTS =====
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey) {
+            if (e.key === 'd') { e.preventDefault(); decodificar(); }
+            if (e.key === 'e') { e.preventDefault(); codificar(); }
+            if (e.key === 'h') { e.preventDefault(); switchTab('history'); }
+            if (e.key === 'l') { e.preventDefault(); limparDecoder(); }
+        }
+    });
+
+    // Fechar menu ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.settings-container')) {
+            document.querySelectorAll('.menu').forEach(m => m.classList.remove('active'));
+        }
+    });
+
+    // ===== INIT =====
+    window.addEventListener('load', () => {
+        updateHistoryDisplay();
+        proximoDesafio();
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') setTheme('light');
+        currentLang = localStorage.getItem('lang') || 'pt';
+    });
+</script>
+
+</body>
+</html>
