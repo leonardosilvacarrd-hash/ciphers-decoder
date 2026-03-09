@@ -796,6 +796,14 @@
     let feedbacks = JSON.parse(localStorage.getItem('decoderFeedbacks') || '[]');
     let currentChallenge = 0;
 
+    // ===== GITHUB CONFIG =====
+    const GITHUB_CONFIG = {
+        owner: 'leonardosilvacarrd-hash', 
+        repo: 'ciphers-decoder',   
+        token: 'SEU_GITHUB_TOKEN',  
+        filePath: 'feedbacks.json'
+    };
+
     const challenges = [
         { cipher: "base64", text: "SGVsbG8gV29ybGQ=", answer: "Hello World" },
         { cipher: "rot13", text: "URYYB", answer: "HELLO" },
@@ -1343,9 +1351,105 @@
         feedbacks.unshift(feedback);
         localStorage.setItem('decoderFeedbacks', JSON.stringify(feedbacks));
 
+        // Salvar no GitHub
+        salvarFeedbackNoGitHub(feedbacks);
+
         notify('✅ Feedback enviado! Obrigado por ajudar!');
         limparFeedback();
         exibirFeedbacks();
+    }
+
+    function salvarFeedbackNoGitHub(data) {
+        if (!GITHUB_CONFIG.token || GITHUB_CONFIG.token === 'SEU_GITHUB_TOKEN') {
+            console.warn('GitHub token não configurado');
+            return;
+        }
+
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+        
+        // Primeiro, pega o SHA do arquivo existente
+        fetch(url, {
+            headers: {
+                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        })
+        .then(res => res.json())
+        .then(response => {
+            const sha = response.sha;
+            const content = btoa(JSON.stringify(data, null, 2));
+            
+            // Agora atualiza o arquivo
+            return fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_CONFIG.token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Add feedback - ${new Date().toLocaleString()}`,
+                    content: content,
+                    sha: sha
+                })
+            });
+        })
+        .catch(error => {
+            console.warn('Erro ao salvar no GitHub:', error);
+            // Tenta criar o arquivo se não existir
+            criarArquivoNoGitHub(data);
+        });
+    }
+
+    function criarArquivoNoGitHub(data) {
+        if (!GITHUB_CONFIG.token || GITHUB_CONFIG.token === 'SEU_GITHUB_TOKEN') {
+            return;
+        }
+
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+        const content = btoa(JSON.stringify(data, null, 2));
+
+        fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Create feedbacks.json - ${new Date().toLocaleString()}`,
+                content: content
+            })
+        })
+        .then(() => console.log('Arquivo criado no GitHub'))
+        .catch(error => console.warn('Erro ao criar arquivo:', error));
+    }
+
+    function carregarFeedbacksDoGitHub() {
+        if (!GITHUB_CONFIG.token || GITHUB_CONFIG.token === 'SEU_GITHUB_TOKEN') {
+            console.warn('GitHub token não configurado');
+            return;
+        }
+
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+
+        fetch(url, {
+            headers: {
+                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        })
+        .then(res => res.json())
+        .then(response => {
+            if (response.content) {
+                const decodedContent = atob(response.content);
+                feedbacks = JSON.parse(decodedContent);
+                localStorage.setItem('decoderFeedbacks', JSON.stringify(feedbacks));
+                exibirFeedbacks();
+                console.log('Feedbacks carregados do GitHub');
+            }
+        })
+        .catch(error => console.warn('Erro ao carregar feedbacks do GitHub:', error));
     }
 
     function limparFeedback() {
@@ -1435,6 +1539,9 @@
         const savedTheme = localStorage.getItem('theme') || 'dark';
         if (savedTheme === 'light') setTheme('light');
         currentLang = localStorage.getItem('lang') || 'pt';
+        
+        // Carregar feedbacks do GitHub
+        carregarFeedbacksDoGitHub();
     });
 </script>
 
