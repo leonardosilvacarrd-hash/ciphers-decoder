@@ -1363,21 +1363,34 @@
             return;
         }
 
-        fetch(GOOGLE_SHEETS_CONFIG.scriptUrl, {
-            method: 'POST',
-            body: JSON.stringify({
-                type: feedback.type,
-                text: feedback.text,
-                email: feedback.email,
-                time: feedback.time
-            })
-        })
-        .then(() => {
-            console.log('✓ Feedback salvo no Google Sheets');
-        })
-        .catch(error => {
-            console.warn('Erro ao salvar no Google Sheets:', error);
-        });
+        // Criar um formulário invisível para enviar dados
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = GOOGLE_SHEETS_CONFIG.scriptUrl;
+        form.style.display = 'none';
+
+        // Adicionar campos
+        const fields = {
+            type: feedback.type,
+            text: feedback.text,
+            email: feedback.email,
+            time: feedback.time
+        };
+
+        for (let key in fields) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = fields[key];
+            form.appendChild(input);
+        }
+
+        // Enviar form
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+
+        console.log('✓ Feedback enviado para Google Sheets');
     }
 
     function carregarFeedbacksDoGoogleSheets() {
