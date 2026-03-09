@@ -796,12 +796,10 @@
     let feedbacks = JSON.parse(localStorage.getItem('decoderFeedbacks') || '[]');
     let currentChallenge = 0;
 
-    // ===== GITHUB CONFIG =====
-    const GITHUB_CONFIG = {
-        owner: 'leonardosilvacarrd-hash', 
-        repo: 'ciphers-decoder',   
-        token: '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',  
-        filePath: 'feedbacks.json'
+    // ===== GOOGLE SHEETS CONFIG =====
+    const GOOGLE_SHEETS_CONFIG = {
+        scriptUrl: 'https://script.google.com/macros/s/AKfycbx-ihZ2RaNZK1h90eJnForSflgc-5J_0ekAXq-WWVJuhqQ1NDqMqXxCJNzF01zPd8YX_w/exec',
+        scriptId: 'AKfycbx-ihZ2RaNZK1h90eJnForSflgc-5J_0ekAXq-WWVJuhqQ1NDqMqXxCJNzF01zPd8YX_w'
     };
 
     const challenges = [
@@ -1351,105 +1349,44 @@
         feedbacks.unshift(feedback);
         localStorage.setItem('decoderFeedbacks', JSON.stringify(feedbacks));
 
-        // Salvar no GitHub
-        salvarFeedbackNoGitHub(feedbacks);
+        // Salvar no Google Sheets
+        salvarFeedbackNoGoogleSheets(feedback);
 
         notify('✅ Feedback enviado! Obrigado por ajudar!');
         limparFeedback();
         exibirFeedbacks();
     }
 
-    function salvarFeedbackNoGitHub(data) {
-        if (!GITHUB_CONFIG.token || GITHUB_CONFIG.token === 'SEU_GITHUB_TOKEN') {
-            console.warn('GitHub token não configurado');
+    function salvarFeedbackNoGoogleSheets(feedback) {
+        if (!GOOGLE_SHEETS_CONFIG.scriptUrl || GOOGLE_SHEETS_CONFIG.scriptUrl.includes('SEU_')) {
+            console.warn('Google Sheets não configurado');
             return;
         }
 
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
-        
-        // Primeiro, pega o SHA do arquivo existente
-        fetch(url, {
-            headers: {
-                'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
+        fetch(GOOGLE_SHEETS_CONFIG.scriptUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: feedback.type,
+                text: feedback.text,
+                email: feedback.email,
+                time: feedback.time
+            })
         })
-        .then(res => res.json())
-        .then(response => {
-            const sha = response.sha;
-            const content = btoa(JSON.stringify(data, null, 2));
-            
-            // Agora atualiza o arquivo
-            return fetch(url, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${GITHUB_CONFIG.token}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: `Add feedback - ${new Date().toLocaleString()}`,
-                    content: content,
-                    sha: sha
-                })
-            });
+        .then(() => {
+            console.log('✓ Feedback salvo no Google Sheets');
         })
         .catch(error => {
-            console.warn('Erro ao salvar no GitHub:', error);
-            // Tenta criar o arquivo se não existir
-            criarArquivoNoGitHub(data);
+            console.warn('Erro ao salvar no Google Sheets:', error);
         });
     }
 
-    function criarArquivoNoGitHub(data) {
-        if (!GITHUB_CONFIG.token || GITHUB_CONFIG.token === 'SEU_GITHUB_TOKEN') {
+    function carregarFeedbacksDoGoogleSheets() {
+        if (!GOOGLE_SHEETS_CONFIG.scriptUrl || GOOGLE_SHEETS_CONFIG.scriptUrl.includes('SEU_')) {
+            console.warn('Google Sheets não configurado ainda');
             return;
         }
 
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
-        const content = btoa(JSON.stringify(data, null, 2));
-
-        fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: `Create feedbacks.json - ${new Date().toLocaleString()}`,
-                content: content
-            })
-        })
-        .then(() => console.log('Arquivo criado no GitHub'))
-        .catch(error => console.warn('Erro ao criar arquivo:', error));
-    }
-
-    function carregarFeedbacksDoGitHub() {
-        if (!GITHUB_CONFIG.token || GITHUB_CONFIG.token === 'SEU_GITHUB_TOKEN') {
-            console.warn('GitHub token não configurado');
-            return;
-        }
-
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
-
-        fetch(url, {
-            headers: {
-                'Authorization': `token ${GITHUB_CONFIG.token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        })
-        .then(res => res.json())
-        .then(response => {
-            if (response.content) {
-                const decodedContent = atob(response.content);
-                feedbacks = JSON.parse(decodedContent);
-                localStorage.setItem('decoderFeedbacks', JSON.stringify(feedbacks));
-                exibirFeedbacks();
-                console.log('Feedbacks carregados do GitHub');
-            }
-        })
-        .catch(error => console.warn('Erro ao carregar feedbacks do GitHub:', error));
+        console.log('✓ Google Sheets conectado e pronto!');
     }
 
     function limparFeedback() {
@@ -1540,11 +1477,10 @@
         if (savedTheme === 'light') setTheme('light');
         currentLang = localStorage.getItem('lang') || 'pt';
         
-        // Carregar feedbacks do GitHub
-        carregarFeedbacksDoGitHub();
+        // Carregar feedbacks do Google Sheets
+        carregarFeedbacksDoGoogleSheets();
     });
 </script>
 
 </body>
 </html>
-
