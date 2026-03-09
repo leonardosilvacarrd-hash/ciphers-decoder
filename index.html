@@ -1363,10 +1363,17 @@
             return;
         }
 
-        // Criar um formulário invisível para enviar dados
+        // Criar um iframe invisível para enviar dados sem abrir página
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.name = 'feedback-frame-' + Date.now();
+        document.body.appendChild(iframe);
+
+        // Criar um formulário invisível
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = GOOGLE_SHEETS_CONFIG.scriptUrl;
+        form.target = iframe.name;
         form.style.display = 'none';
 
         // Adicionar campos
@@ -1388,7 +1395,12 @@
         // Enviar form
         document.body.appendChild(form);
         form.submit();
-        document.body.removeChild(form);
+        
+        // Limpar depois
+        setTimeout(() => {
+            document.body.removeChild(form);
+            document.body.removeChild(iframe);
+        }, 1000);
 
         console.log('✓ Feedback enviado para Google Sheets');
     }
